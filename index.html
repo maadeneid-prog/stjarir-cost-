@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>حاسبة تكلفة St. Jarir — تعمل مباشرة</title>
+<title>حاسبة تكلفة St. Jarir — بحساب الشدة + وحدة قياس</title>
 <style>
   :root{--bg:#0f0f12;--card:#15161a;--muted:#8b909a;--text:#e8eaed;--accent:#ff7a00;--ok:#25c26e;--bad:#ff4d4f;}
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
@@ -13,15 +13,16 @@
   header .actions{display:flex;gap:8px;flex-wrap:wrap}
   button{background:#22262b;color:var(--text);border:1px solid #2d3136;padding:8px 12px;border-radius:10px;cursor:pointer}
   button.primary{background:var(--accent);border-color:transparent;color:#111;font-weight:700}
-  main{max-width:1100px;margin:24px auto;padding:0 16px 80px}
+  main{max-width:1200px;margin:24px auto;padding:0 16px 80px}
   .grid{display:grid;gap:16px}
-  @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr}}
+  @media(min-width:1100px){.grid{grid-template-columns:1.2fr .8fr}}
   .card{background:var(--card);border:1px solid #202227;border-radius:16px;padding:16px}
   .card h2{margin:0 0 12px;font-size:16px}
   table{width:100%;border-collapse:collapse}
   th,td{padding:10px;border-bottom:1px solid #24262c;text-align:center}
   th{font-weight:700;color:#cfd3da}
-  td input{width:100%;padding:8px;border-radius:8px;border:1px solid #2d3136;background:#0f1013;color:var(--text);text-align:center}
+  td input, td select{width:100%;padding:8px;border-radius:8px;border:1px solid #2d3136;background:#0f1013;color:var(--text);text-align:center}
+  td .unit-suffix{font-size:12px;color:#cfd3da;display:block;margin-top:4px}
   td .row-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
   .muted{color:var(--muted)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -33,11 +34,12 @@
   .mini{font-size:12px;color:#cfd3da}
   .success{background:#122a18;border-color:#1e3a26;color:#b8f0c9}
   .danger{background:#2a1215;border-color:#3a1a1f;color:#ffb3b5}
+  .nowrap{white-space:nowrap}
 </style>
 </head>
 <body>
   <header>
-    <h1>حاسبة تكلفة St. Jarir — تعمل مباشرة</h1>
+    <h1>حاسبة تكلفة St. Jarir — بحساب الشدة + وحدة قياس</h1>
     <div class="actions">
       <button class="primary" id="saveBtn">حفظ</button>
       <button id="resetBtn">إرجاع الافتراضي</button>
@@ -51,8 +53,10 @@
         <thead>
           <tr>
             <th>المادة الخام</th>
-            <th>التكلفة للوحدة (ريال)</th>
-            <th>الكمية المستخدمة</th>
+            <th>الوحدة</th>
+            <th class="nowrap">سعر الشدة (ريال)</th>
+            <th class="nowrap">عدد الوحدات في الشدة</th>
+            <th class="nowrap">الوحدات المستخدمة</th>
             <th>التكلفة الفعلية</th>
             <th>إجراء</th>
           </tr>
@@ -60,13 +64,13 @@
         <tbody></tbody>
         <tfoot>
           <tr>
-            <td colspan="3" class="muted">إجمالي تكلفة المواد لكل كوب</td>
+            <td colspan="5" class="muted">إجمالي تكلفة المواد لكل كوب</td>
             <td id="materialsTotal">0.00</td>
             <td></td>
           </tr>
         </tfoot>
       </table>
-      <div class="mini">🔧 غيّر الأسعار أو الكميات وسيتم الحساب تلقائيًا.</div>
+      <div class="mini">📐 المعادلة: (سعر الشدة ÷ عدد الوحدات في الشدة) × الوحدات المستخدمة — والوحدة التي تختارها (حبة/جم/مل) تُستخدم للرقمين معًا.</div>
     </section>
 
     <section class="card">
@@ -136,19 +140,19 @@
 const $ = (s)=>document.querySelector(s);
 const tblBody = $('#materialsTbl tbody');
 
-// 10 مواد افتراضية
 const defaultData = {
   materials:[
-    {name:'مادة 1', unitCost:0, qty:0},
-    {name:'مادة 2', unitCost:0, qty:0},
-    {name:'مادة 3', unitCost:0, qty:0},
-    {name:'مادة 4', unitCost:0, qty:0},
-    {name:'مادة 5', unitCost:0, qty:0},
-    {name:'مادة 6', unitCost:0, qty:0},
-    {name:'مادة 7', unitCost:0, qty:0},
-    {name:'مادة 8', unitCost:0, qty:0},
-    {name:'مادة 9', unitCost:0, qty:0},
-    {name:'مادة 10', unitCost:0, qty:0},
+    // name, unit ('piece' | 'g' | 'ml'), packPrice, packCount, usedCount
+    {name:'مادة 1', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 2', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 3', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 4', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 5', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 6', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 7', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 8', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 9', unit:'piece', packPrice:0, packCount:1, usedCount:0},
+    {name:'مادة 10', unit:'piece', packPrice:0, packCount:1, usedCount:0},
   ],
   rent:5000, labor:8000, utilities:1200, other:800, cupsMonthly:2000,
   sellPriceManual:30, targetMargin:40, vatRate:15, batchQty:50, batchPriceMode:'manual'
@@ -156,7 +160,7 @@ const defaultData = {
 
 function loadState(){
   try{
-    const raw = localStorage.getItem('stjarir_calc_simple_final');
+    const raw = localStorage.getItem('stjarir_calc_pack_unit_v1');
     if(!raw) return JSON.parse(JSON.stringify(defaultData));
     const obj = JSON.parse(raw);
     return Object.assign({}, defaultData, obj);
@@ -166,13 +170,15 @@ function loadState(){
 }
 function saveState(){
   const state = collectState();
-  localStorage.setItem('stjarir_calc_simple_final', JSON.stringify(state));
+  localStorage.setItem('stjarir_calc_pack_unit_v1', JSON.stringify(state));
 }
 function collectState(){
   const materials = [...tblBody.querySelectorAll('tr')].map(tr=>({
     name: tr.querySelector('.name').value || '',
-    unitCost: parseFloat(tr.querySelector('.unit').value)||0,
-    qty: parseFloat(tr.querySelector('.qty').value)||0,
+    unit: tr.querySelector('.unitSel').value,
+    packPrice: parseFloat(tr.querySelector('.packPrice').value)||0,
+    packCount: Math.max(0.000001, parseFloat(tr.querySelector('.packCount').value)||0),
+    usedCount: Math.max(0, parseFloat(tr.querySelector('.usedCount').value)||0),
   }));
   return {
     materials,
@@ -188,52 +194,87 @@ function collectState(){
 function num(sel){ return parseFloat($(sel).value)||0; }
 function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
 
-function makeRow(item={name:'',unitCost:0,qty:0}){
+function unitLabel(u){
+  return u==='g' ? 'جم' : (u==='ml' ? 'مل' : 'حبة');
+}
+function makeRow(item={name:'',unit:'piece',packPrice:0,packCount:1,usedCount:0}){
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input class="name" value="${item.name}"></td>
-    <td><input type="number" class="unit" value="${item.unitCost}" min="0" step="0.01"></td>
-    <td><input type="number" class="qty" value="${item.qty}" min="0" step="0.01"></td>
+    <td>
+      <select class="unitSel">
+        <option value="piece"${item.unit==='piece'?' selected':''}>حبة</option>
+        <option value="g"${item.unit==='g'?' selected':''}>جم</option>
+        <option value="ml"${item.unit==='ml'?' selected':''}>مل</option>
+      </select>
+    </td>
+    <td>
+      <input type="number" class="packPrice" value="${item.packPrice}" min="0" step="0.01">
+    </td>
+    <td>
+      <input type="number" class="packCount" value="${item.packCount}" min="0.000001" step="0.01">
+      <span class="unit-suffix">${unitLabel(item.unit)}</span>
+    </td>
+    <td>
+      <input type="number" class="usedCount" value="${item.usedCount}" min="0" step="0.01">
+      <span class="unit-suffix">${unitLabel(item.unit)}</span>
+    </td>
     <td class="cost">0.00</td>
     <td class="row-actions">
       <button class="del">حذف</button>
       <button class="dup">نسخ</button>
     </td>
   `;
+  // تزامن تغيير الوحدة مع التسميات
+  const sel = tr.querySelector('.unitSel');
+  sel.addEventListener('change', ()=>{
+    tr.querySelectorAll('.unit-suffix').forEach(s=>s.textContent = unitLabel(sel.value));
+    recalc();
+  });
+
   tr.querySelectorAll('input').forEach(i=>i.addEventListener('input', recalc));
   tr.querySelector('.del').addEventListener('click', ()=>{ tr.remove(); recalc(); });
   tr.querySelector('.dup').addEventListener('click', ()=>{
     addRow({
       name: tr.querySelector('.name').value,
-      unitCost: parseFloat(tr.querySelector('.unit').value)||0,
-      qty: parseFloat(tr.querySelector('.qty').value)||0,
+      unit: tr.querySelector('.unitSel').value,
+      packPrice: parseFloat(tr.querySelector('.packPrice').value)||0,
+      packCount: Math.max(0.000001, parseFloat(tr.querySelector('.packCount').value)||0),
+      usedCount: Math.max(0, parseFloat(tr.querySelector('.usedCount').value)||0),
     });
     recalc();
   });
   return tr;
 }
-function addRow(item){ tblBody.appendChild(makeRow(item||{name:'',unitCost:0,qty:0})); }
+function addRow(item){ tblBody.appendChild(makeRow(item)); }
 
 function recalc(){
   const st = collectState();
+
+  // تكلفة المواد = مجموع ((سعر الشدة ÷ عدد الوحدات) × الوحدات المستخدمة)
   let materialsTotal = 0;
   [...tblBody.querySelectorAll('tr')].forEach(tr=>{
-    const unit = parseFloat(tr.querySelector('.unit').value)||0;
-    const qty = parseFloat(tr.querySelector('.qty').value)||0;
-    const cost = unit*qty;
+    const packPrice = parseFloat(tr.querySelector('.packPrice').value)||0;
+    const packCount = Math.max(0.000001, parseFloat(tr.querySelector('.packCount').value)||0);
+    const usedCount = Math.max(0, parseFloat(tr.querySelector('.usedCount').value)||0);
+    const unitCost = packPrice / packCount;
+    const cost = unitCost * usedCount;
     tr.querySelector('.cost').textContent = fmt(cost);
     materialsTotal += cost;
   });
   $('#materialsTotal').textContent = fmt(materialsTotal);
 
+  // مصاريف ثابتة
   const fixedTotal = st.rent + st.labor + st.utilities + st.other;
   $('#fixedTotal').textContent = fmt(fixedTotal);
   const fixedPerCup = fixedTotal / Math.max(1, st.cupsMonthly);
   $('#fixedPerCup').textContent = fmt(fixedPerCup);
 
+  // التكلفة الحقيقية
   const realCost = materialsTotal + fixedPerCup;
   $('#realCost').textContent = fmt(realCost);
 
+  // ربح وهامش يدوي
   const profitManual = st.sellPriceManual - realCost;
   $('#profitManual').textContent = fmt(profitManual);
   const marginManual = st.sellPriceManual>0 ? (profitManual / st.sellPriceManual)*100 : 0;
@@ -242,6 +283,7 @@ function recalc(){
   pill.classList.remove('success','danger');
   if(marginManual>=30) pill.classList.add('success'); else if(marginManual<10) pill.classList.add('danger');
 
+  // سعر مقترح + ضريبة
   const suggestedPrice = (1 - st.targetMargin/100) <= 0 ? 0 : realCost / (1 - st.targetMargin/100);
   $('#suggestedPrice').textContent = fmt(suggestedPrice);
   const vatPerCup = suggestedPrice * (st.vatRate/100);
@@ -249,6 +291,7 @@ function recalc(){
   $('#vatPerCup').textContent = fmt(vatPerCup);
   $('#suggestedAfterVat').textContent = fmt(suggestedAfterVat);
 
+  // دفعة الإنتاج
   const batchPrice = (st.batchPriceMode==='manual') ? st.sellPriceManual : suggestedAfterVat;
   const batchCost = realCost * st.batchQty;
   const batchRevenue = batchPrice * st.batchQty;
@@ -257,6 +300,7 @@ function recalc(){
   $('#batchRevenue').textContent = fmt(batchRevenue);
   $('#batchProfit').textContent = fmt(batchProfit);
 
+  // نقطة التعادل
   const breakevenCups = (profitManual>0) ? Math.ceil(fixedTotal / profitManual) : 0;
   $('#breakevenCups').textContent = breakevenCups;
 
@@ -280,10 +324,11 @@ function populate(state){
 }
 
 document.addEventListener('input', (e)=>{ if(e.target.matches('input, select')) recalc(); });
-document.addEventListener('click', (e)=>{ if(e.target && e.target.id==='addRowBtn'){ addRow({name:'مادة جديدة',unitCost:0,qty:0}); recalc(); }});
-$('#resetBtn').addEventListener('click', ()=>{ if(confirm('إرجاع القيم الافتراضية؟')){ localStorage.removeItem('stjarir_calc_simple_final'); populate(loadState()); } });
+document.addEventListener('click', (e)=>{ if(e.target && e.target.id==='addRowBtn'){ addRow({name:'مادة جديدة',unit:'piece',packPrice:0,packCount:1,usedCount:0}); recalc(); }});
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('إرجاع القيم الافتراضية؟')){ localStorage.removeItem('stjarir_calc_pack_unit_v1'); populate(loadState()); } });
 $('#saveBtn').addEventListener('click', ()=>{ saveState(); const btn = $('#saveBtn'); const old = btn.textContent; btn.textContent='تم الحفظ ✅'; setTimeout(()=>btn.textContent=old, 1200); });
 
 populate(loadState());
 </script>
 </body>
+</html>
