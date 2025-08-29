@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>حاسبة تكلفة St. Jarir — تعمل مباشرة</title>
+<style>
+  :root{--bg:#0f0f12;--card:#15161a;--muted:#8b909a;--text:#e8eaed;--accent:#ff7a00;--ok:#25c26e;--bad:#ff4d4f;}
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  body{margin:0;background:var(--bg);color:var(--text);}
+  header{padding:16px 20px;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:18px}
+  header .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button{background:#22262b;color:var(--text);border:1px solid #2d3136;padding:8px 12px;border-radius:10px;cursor:pointer}
+  button.primary{background:var(--accent);border-color:transparent;color:#111;font-weight:700}
+  main{max-width:1100px;margin:24px auto;padding:0 16px 80px}
+  .grid{display:grid;gap:16px}
+  @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr}}
+  .card{background:var(--card);border:1px solid #202227;border-radius:16px;padding:16px}
+  .card h2{margin:0 0 12px;font-size:16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid #24262c;text-align:center}
+  th{font-weight:700;color:#cfd3da}
+  td input{width:100%;padding:8px;border-radius:8px;border:1px solid #2d3136;background:#0f1013;color:var(--text);text-align:center}
+  td .row-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .kpi{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .pill{background:#0e0f12;border:1px solid #2a2e34;padding:10px 12px;border-radius:10px;min-width:140px;text-align:center}
+  .pill b{display:block;font-size:18px;margin-top:4px}
+  .footer-pill{background:#1a1c21;border:1px solid #2a2d33;padding:10px 12px;border-radius:10px;margin-top:12px}
+  .mini{font-size:12px;color:#cfd3da}
+  .success{background:#122a18;border-color:#1e3a26;color:#b8f0c9}
+  .danger{background:#2a1215;border-color:#3a1a1f;color:#ffb3b5}
+</style>
+</head>
+<body>
+  <header>
+    <h1>حاسبة تكلفة St. Jarir — تعمل مباشرة</h1>
+    <div class="actions">
+      <button class="primary" id="saveBtn">حفظ</button>
+      <button id="resetBtn">إرجاع الافتراضي</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>المواد الخام <button id="addRowBtn">+ مادة</button></h2>
+      <table id="materialsTbl">
+        <thead>
+          <tr>
+            <th>المادة الخام</th>
+            <th>التكلفة للوحدة (ريال)</th>
+            <th>الكمية المستخدمة</th>
+            <th>التكلفة الفعلية</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="muted">إجمالي تكلفة المواد لكل كوب</td>
+            <td id="materialsTotal">0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="mini">🔧 غيّر الأسعار أو الكميات وسيتم الحساب تلقائيًا.</div>
+    </section>
+
+    <section class="card">
+      <h2>مصاريف ثابتة شهرية</h2>
+      <div class="row3">
+        <div><label class="mini">إيجار</label><input type="number" id="rent" value="5000" min="0" step="0.01"></div>
+        <div><label class="mini">رواتب</label><input type="number" id="labor" value="8000" min="0" step="0.01"></div>
+        <div><label class="mini">كهرباء/مياه</label><input type="number" id="utilities" value="1200" min="0" step="0.01"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label class="mini">مصاريف أخرى</label><input type="number" id="other" value="800" min="0" step="0.01"></div>
+        <div><label class="mini">عدد الأكواب المنتجة شهريًا</label><input type="number" id="cupsMonthly" value="2000" min="1" step="1"></div>
+      </div>
+      <div class="kpi" style="margin-top:12px">
+        <div class="pill">إجمالي المصاريف الثابتة<b id="fixedTotal">0.00</b></div>
+        <div class="pill">نصيب الكوب من المصاريف<b id="fixedPerCup">0.00</b></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>التسعير والربحية للكوب</h2>
+      <div class="row3">
+        <div><label class="mini">سعر البيع (يدوي) – قبل الضريبة</label><input type="number" id="sellPriceManual" value="30" min="0" step="0.01"></div>
+        <div><label class="mini">نسبة الربح المطلوبة %</label><input type="number" id="targetMargin" value="40" min="0" max="95" step="0.1"></div>
+        <div><label class="mini">ضريبة القيمة المضافة %</label><input type="number" id="vatRate" value="15" min="0" max="100" step="0.1"></div>
+      </div>
+      <div class="kpi" style="margin-top:12px">
+        <div class="pill">التكلفة الحقيقية للكوب<b id="realCost">0.00</b></div>
+        <div class="pill" id="pillMargin"><span>هامش الربح % (يدوي)</span><b id="marginManual">0%</b></div>
+        <div class="pill">صافي الربح (يدوي) قبل الضريبة<b id="profitManual">0.00</b></div>
+      </div>
+      <div class="kpi" style="margin-top:12px">
+        <div class="pill">سعر مقترح قبل الضريبة<b id="suggestedPrice">0.00</b></div>
+        <div class="pill">ضريبة لكل كوب<b id="vatPerCup">0.00</b></div>
+        <div class="pill">سعر مقترح بعد الضريبة<b id="suggestedAfterVat">0.00</b></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>دفعة الإنتاج & نقطة التعادل</h2>
+      <div class="row">
+        <div><label class="mini">عدد الأكواب في الدفعة</label><input type="number" id="batchQty" value="50" min="1" step="1"></div>
+        <div>
+          <label class="mini">سعر البيع المستخدم للدفعة</label>
+          <select id="batchPriceMode">
+            <option value="manual">اليدوي (قبل الضريبة)</option>
+            <option value="suggestedAfterVat">المقترح (بعد الضريبة)</option>
+          </select>
+        </div>
+      </div>
+      <div class="kpi" style="margin-top:12px">
+        <div class="pill">تكلفة الدفعة الإجمالية<b id="batchCost">0.00</b></div>
+        <div class="pill">إيراد الدفعة<b id="batchRevenue">0.00</b></div>
+        <div class="pill">ربح الدفعة (تقريبي)<b id="batchProfit">0.00</b></div>
+      </div>
+      <div class="footer-pill">
+        🔻 <b>نقطة التعادل:</b> تحتاج لبيع <b id="breakevenCups">0</b> كوب على أساس ربح الكوب اليدوي قبل الضريبة.
+      </div>
+    </section>
+  </main>
+
+  <footer style="position:fixed;bottom:0;left:0;right:0;background:rgba(15,15,18,.9);border-top:1px solid #222;padding:8px 12px;text-align:center">
+    <span class="mini">💾 البيانات تُحفظ محليًا على جهازك (LocalStorage).</span>
+  </footer>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+const tblBody = $('#materialsTbl tbody');
+
+// 10 مواد افتراضية
+const defaultData = {
+  materials:[
+    {name:'مادة 1', unitCost:0, qty:0},
+    {name:'مادة 2', unitCost:0, qty:0},
+    {name:'مادة 3', unitCost:0, qty:0},
+    {name:'مادة 4', unitCost:0, qty:0},
+    {name:'مادة 5', unitCost:0, qty:0},
+    {name:'مادة 6', unitCost:0, qty:0},
+    {name:'مادة 7', unitCost:0, qty:0},
+    {name:'مادة 8', unitCost:0, qty:0},
+    {name:'مادة 9', unitCost:0, qty:0},
+    {name:'مادة 10', unitCost:0, qty:0},
+  ],
+  rent:5000, labor:8000, utilities:1200, other:800, cupsMonthly:2000,
+  sellPriceManual:30, targetMargin:40, vatRate:15, batchQty:50, batchPriceMode:'manual'
+};
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('stjarir_calc_simple_final');
+    if(!raw) return JSON.parse(JSON.stringify(defaultData));
+    const obj = JSON.parse(raw);
+    return Object.assign({}, defaultData, obj);
+  }catch(e){
+    return JSON.parse(JSON.stringify(defaultData));
+  }
+}
+function saveState(){
+  const state = collectState();
+  localStorage.setItem('stjarir_calc_simple_final', JSON.stringify(state));
+}
+function collectState(){
+  const materials = [...tblBody.querySelectorAll('tr')].map(tr=>({
+    name: tr.querySelector('.name').value || '',
+    unitCost: parseFloat(tr.querySelector('.unit').value)||0,
+    qty: parseFloat(tr.querySelector('.qty').value)||0,
+  }));
+  return {
+    materials,
+    rent: num('#rent'), labor: num('#labor'), utilities: num('#utilities'), other: num('#other'),
+    cupsMonthly: Math.max(1, parseInt($('#cupsMonthly').value||'1')),
+    sellPriceManual: num('#sellPriceManual'),
+    targetMargin: num('#targetMargin'),
+    vatRate: num('#vatRate'),
+    batchQty: Math.max(1, parseInt($('#batchQty').value||'1')),
+    batchPriceMode: $('#batchPriceMode').value
+  };
+}
+function num(sel){ return parseFloat($(sel).value)||0; }
+function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+function makeRow(item={name:'',unitCost:0,qty:0}){
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="name" value="${item.name}"></td>
+    <td><input type="number" class="unit" value="${item.unitCost}" min="0" step="0.01"></td>
+    <td><input type="number" class="qty" value="${item.qty}" min="0" step="0.01"></td>
+    <td class="cost">0.00</td>
+    <td class="row-actions">
+      <button class="del">حذف</button>
+      <button class="dup">نسخ</button>
+    </td>
+  `;
+  tr.querySelectorAll('input').forEach(i=>i.addEventListener('input', recalc));
+  tr.querySelector('.del').addEventListener('click', ()=>{ tr.remove(); recalc(); });
+  tr.querySelector('.dup').addEventListener('click', ()=>{
+    addRow({
+      name: tr.querySelector('.name').value,
+      unitCost: parseFloat(tr.querySelector('.unit').value)||0,
+      qty: parseFloat(tr.querySelector('.qty').value)||0,
+    });
+    recalc();
+  });
+  return tr;
+}
+function addRow(item){ tblBody.appendChild(makeRow(item||{name:'',unitCost:0,qty:0})); }
+
+function recalc(){
+  const st = collectState();
+  let materialsTotal = 0;
+  [...tblBody.querySelectorAll('tr')].forEach(tr=>{
+    const unit = parseFloat(tr.querySelector('.unit').value)||0;
+    const qty = parseFloat(tr.querySelector('.qty').value)||0;
+    const cost = unit*qty;
+    tr.querySelector('.cost').textContent = fmt(cost);
+    materialsTotal += cost;
+  });
+  $('#materialsTotal').textContent = fmt(materialsTotal);
+
+  const fixedTotal = st.rent + st.labor + st.utilities + st.other;
+  $('#fixedTotal').textContent = fmt(fixedTotal);
+  const fixedPerCup = fixedTotal / Math.max(1, st.cupsMonthly);
+  $('#fixedPerCup').textContent = fmt(fixedPerCup);
+
+  const realCost = materialsTotal + fixedPerCup;
+  $('#realCost').textContent = fmt(realCost);
+
+  const profitManual = st.sellPriceManual - realCost;
+  $('#profitManual').textContent = fmt(profitManual);
+  const marginManual = st.sellPriceManual>0 ? (profitManual / st.sellPriceManual)*100 : 0;
+  $('#marginManual').textContent = `${fmt(marginManual)}%`;
+  const pill = document.getElementById('pillMargin');
+  pill.classList.remove('success','danger');
+  if(marginManual>=30) pill.classList.add('success'); else if(marginManual<10) pill.classList.add('danger');
+
+  const suggestedPrice = (1 - st.targetMargin/100) <= 0 ? 0 : realCost / (1 - st.targetMargin/100);
+  $('#suggestedPrice').textContent = fmt(suggestedPrice);
+  const vatPerCup = suggestedPrice * (st.vatRate/100);
+  const suggestedAfterVat = suggestedPrice + vatPerCup;
+  $('#vatPerCup').textContent = fmt(vatPerCup);
+  $('#suggestedAfterVat').textContent = fmt(suggestedAfterVat);
+
+  const batchPrice = (st.batchPriceMode==='manual') ? st.sellPriceManual : suggestedAfterVat;
+  const batchCost = realCost * st.batchQty;
+  const batchRevenue = batchPrice * st.batchQty;
+  const batchProfit = batchRevenue - batchCost;
+  $('#batchCost').textContent = fmt(batchCost);
+  $('#batchRevenue').textContent = fmt(batchRevenue);
+  $('#batchProfit').textContent = fmt(batchProfit);
+
+  const breakevenCups = (profitManual>0) ? Math.ceil(fixedTotal / profitManual) : 0;
+  $('#breakevenCups').textContent = breakevenCups;
+
+  saveState();
+}
+
+function populate(state){
+  tblBody.innerHTML='';
+  state.materials.forEach(addRow);
+  $('#rent').value = state.rent;
+  $('#labor').value = state.labor;
+  $('#utilities').value = state.utilities;
+  $('#other').value = state.other;
+  $('#cupsMonthly').value = state.cupsMonthly;
+  $('#sellPriceManual').value = state.sellPriceManual;
+  $('#targetMargin').value = state.targetMargin;
+  $('#vatRate').value = state.vatRate;
+  $('#batchQty').value = state.batchQty;
+  $('#batchPriceMode').value = state.batchPriceMode;
+  recalc();
+}
+
+document.addEventListener('input', (e)=>{ if(e.target.matches('input, select')) recalc(); });
+document.addEventListener('click', (e)=>{ if(e.target && e.target.id==='addRowBtn'){ addRow({name:'مادة جديدة',unitCost:0,qty:0}); recalc(); }});
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('إرجاع القيم الافتراضية؟')){ localStorage.removeItem('stjarir_calc_simple_final'); populate(loadState()); } });
+$('#saveBtn').addEventListener('click', ()=>{ saveState(); const btn = $('#saveBtn'); const old = btn.textContent; btn.textContent='تم الحفظ ✅'; setTimeout(()=>btn.textContent=old, 1200); });
+
+populate(loadState());
+</script>
+</body>
+</html>ا
